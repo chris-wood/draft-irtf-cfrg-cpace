@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>CPace, a balanced composable PAKE</title>
+<meta content="Michel Abdalla" name="author">
+<meta content="Bjoern Haase" name="author">
+<meta content="Julia Hesse" name="author">
+<meta content="
+       This document describes CPace which is a protocol for two
+parties that share a low-entropy secret (password) to derive a strong shared key without
+disclosing the secret to offline dictionary attacks. This method was tailored for constrained devices,
+is compatible with any group of both prime- and non-prime order,
+and comes with  a security proof providing composability guarantees. 
+    " name="description">
+<meta content="xml2rfc 3.11.1" name="generator">
+<meta content="Internet-Draft" name="keyword">
+<meta content="draft-irtf-cfrg-cpace-latest" name="ietf.draft">
+<!-- Generator version information:
+  xml2rfc 3.11.1
+    Python 3.9.5
+    appdirs 1.4.4
+    ConfigArgParse 1.3
+    google-i18n-address 2.5.0
+    html5lib 1.1
+    intervaltree 3.1.0
+    Jinja2 2.11.3
+    kitchen 1.2.6
+    lxml 4.6.3
+    pycountry 20.7.3
+    pyflakes 2.3.0
+    PyYAML 5.4.1
+    requests 2.25.1
+    setuptools 52.0.0
+    six 1.15.0
+-->
+<link href="draft-irtf-cfrg-cpace.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Cabin Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Cabin Condensed SemiBold'), local('CabinCondensed-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/cabincondensed-semibold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Cabin Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Cabin Condensed SemiBold'), local('CabinCondensed-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/cabincondensed-semibold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Cabin Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Cabin Condensed SemiBold'), local('CabinCondensed-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/cabincondensed-semibold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light dark;
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --pilcrow-weak: #ddd;
+  --pilcrow-strong: #bbb;
+  --small-font-size: 14.5px;
+  --font-mono: 'Oxygen Mono', monospace;
+  scrollbar-color: #bbb #eee;
+}
+body {
+  max-width: 600px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Cabin Condensed", sans-serif;
+  font-weight: 600;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+h1#title {
+  font-size: 32px;
+  line-height: 40px;
+  clear: both;
+}
+h1#title, h1#rfcnum {
+  margin: 1.5em 0 0.2em;
+}
+h1#rfcnum + h1#title {
+  margin: 0.2em 0;
+}
+
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 27px;
+}
+h4, h5, h6 {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+}
+#abstract+p {
+  font-size: 18px;
+  line-height: 24px;
+}
+#abstract+p code, #abstract+p samp, #abstract+p tt {
+  font-size: 16px;
+  line-height: 0;
+}
+
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+/* font-family isn't space-separated, but =~ will have to do */
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  border: none;
+  /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+     support flexbox yet.
+  */
+  display: table;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 0.5em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+dd.break {
+  display: none;
+}
+
+/* links */
+a, a[href].selfRef:hover {
+  text-decoration: none;
+}
+a[href].selfRef {
+  color: var(--text-color);
+}
+a[href] {
+  color: var(--link-color);
+}
+a[href]:hover {
+  text-decoration: underline;
+}
+a[href].selfRef:hover {
+  background-color: var(--highlight-color);
+}
+a.xref {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px var(--font-mono);
+}
+tt, code {
+  /* changing the font for inline elements leads to different ascender
+     and descender heights; as we want to retain baseline alignment,
+     remove leading to avoid altering the final height of lines */
+  line-height: 0;
+}
+pre {
+  border: 1px solid var(--line-color);
+  font-size: 13.5px;
+  line-height: 16px;
+  letter-spacing: -0.2px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+  padding: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+}
+@media screen {
+  pre, svg {
+    display: inline-block;
+    overflow-x: auto;
+  }
+  pre {
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  svg {
+    max-width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  pre + .pilcrow, svg + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  margin: 1em 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  max-width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+}
+table.right {
+  margin-left: auto;
+}
+table.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+table.left {
+  margin-right: auto;
+}
+thead, tbody {
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 10px;
+}
+th {
+  background-color: var(--line-color);
+}
+tr:nth-child(2n) > td {
+  background-color: var(--background-color);
+}
+tr:nth-child(2n+1) > td {
+  background-color: var(--highlight-color);
+}
+thead+tbody > tr:nth-child(2n) > td {
+  background-color: var(--highlight-color);
+}
+thead+tbody > tr:nth-child(2n+1) > td {
+  background-color: var(--background-color);
+}
+table caption {
+  margin: 0;
+  padding: 3px 0 3px 1em;
+}
+table p {
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  opacity: 0.2;
+  user-select: none;
+}
+a.pilcrow[href] { color: var(--pilcrow-weak); }
+a.pilcrow[href]:hover { text-decoration: none; }
+@media not print {
+  :hover > a.pilcrow {
+    opacity: 1;
+  }
+  a.pilcrow[href]:hover {
+    color: var(--pilcrow-strong);
+    background-color: transparent;
+  }
+}
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 8em;
+}
+#identifiers dt {
+  width: var(--identifier-width);
+  margin: 0;
+  clear: left;
+  float: left;
+  text-align: right;
+}
+#identifiers dd {
+  margin: 0 0 0 calc(1em + var(--identifier-width));
+  min-width: 5em;
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+#toc nav ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+#toc nav li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+#toc a.xref {
+  white-space: normal;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 500px) {
+  .index ul {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  .index ul ul {
+    column-count: 1;
+    column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 500px) {
+  #authors-addresses > section {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  #authors-addresses > section > h2 {
+    column-span: all;
+  }
+  /* hack for break-inside: avoid-column */
+  #authors-addresses address {
+    display: inline-block;
+    break-inside: avoid-column;
+  }
+}
+
+.rfcEditorRemove p:first-of-type {
+  font-style: italic;
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 929px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+  }
+  #toc.active {
+      opacity: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 2px 0 2px 6px;
+    padding-right: 1em;
+    font-size: 18px;
+    line-height: 24px;
+    min-width: 190px;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 8px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    background-color: var(--background-color);
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+  #toc.active nav {
+    display: block;
+  }
+  /* Make the collapsed ToC header render white on gray also when it's a link */
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+  #toc a.toplink {
+    margin-top: 2px;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 930px) {
+  body {
+    padding-right: 360px;
+    padding-right: calc(min(180px + 20%, 500px));
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 2em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  #toc nav > ul  {
+    margin-bottom: 2em;
+  }
+  #toc ul {
+    margin: 0 0 0 4px;
+    font-size: var(--small-font-size);
+  }
+  #toc ul p, #toc ul li {
+    margin: 2px 0;
+    line-height: 22px;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Changes introduced to fix issues found during implementation */
+
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin: 8px 0.5em 0;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table .text-left, table .text-left {
+  text-align: left;
+}
+table .text-center, table .text-center {
+  text-align: center;
+}
+table .text-right, table .text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 20em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  dd {
+    page-break-before: avoid;
+  }
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+/* Dark mode. */
+@media (prefers-color-scheme: dark) {
+:root {
+  --background-color: #121212;
+  --text-color: #f0f0f0;
+  --title-color: #fff;
+  --link-color: #4da4f0;
+  --highlight-color: #282828;
+  --line-color: #444;
+  --pilcrow-weak: #444;
+  --pilcrow-strong: #666;
+  scrollbar-color: #777 #333;
+}
+/* Trick: a prefix match works because only black and white are allowed */
+svg [stroke="black"], svg [stroke^="#000"] {
+  stroke: var(--text-color);
+}
+svg [stroke="white"], svg [stroke^="#fff"] {
+  stroke: var(--background-color);
+}
+svg [fill="black"], svg [fill^="#000"], svg :not([fill]) {
+  fill: var(--text-color);
+}
+svg [stroke="fill"], svg [fill^="#fff"] {
+  fill: var(--background-color);
+}
+}
+</style>
+
+</head>
+<body>
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">CPace</td>
+<td class="right">November 2021</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Abdalla, et al.</td>
+<td class="center">Expires 7 May 2022</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">Network Working Group</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-irtf-cfrg-cpace-latest</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2021-11-03" class="published">3 November 2021</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Informational</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2022-05-07">7 May 2022</time></dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">M. Abdalla</div>
+<div class="org">DI, École Normale Supérieure, Paris</div>
+</div>
+<div class="author">
+      <div class="author-name">B. Haase</div>
+<div class="org">Endress + Hauser Liquid Analysis</div>
+</div>
+<div class="author">
+      <div class="author-name">J. Hesse</div>
+<div class="org">IBM, Zürich Research Laboratory</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">CPace, a balanced composable PAKE</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document describes CPace which is a protocol for two
+parties that share a low-entropy secret (password) to derive a strong shared key without
+disclosing the secret to offline dictionary attacks. This method was tailored for constrained devices,
+is compatible with any group of both prime- and non-prime order,
+and comes with  a security proof providing composability guarantees.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<section class="note rfcEditorRemove" id="section-note.1">
+      <h2 id="name-discussion-venues">
+<a href="#name-discussion-venues" class="section-name selfRef">Discussion Venues</a>
+      </h2>
+<p id="section-note.1-1">This note is to be removed before publishing as an RFC.<a href="#section-note.1-1" class="pilcrow">¶</a></p>
+<p id="section-note.1-2">Discussion of this document takes place on the
+    Crypto Forum Research Group mailing list (cfrg@ietf.org),
+    which is archived at <span><a href="https://mailarchive.ietf.org/arch/search/?email_list=cfrg">https://mailarchive.ietf.org/arch/search/?email_list=cfrg</a></span>.<a href="#section-note.1-2" class="pilcrow">¶</a></p>
+<p id="section-note.1-3">Source for this draft and an issue tracker can be found at
+    <span><a href="https://github.com/chris-wood/draft-irtf-cfrg-cpace">https://github.com/chris-wood/draft-irtf-cfrg-cpace</a></span>.<a href="#section-note.1-3" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 7 May 2022.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2021 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="xref">1</a>.  <a href="#name-introduction" class="xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="xref">2</a>.  <a href="#name-requirements-notation" class="xref">Requirements Notation</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="xref">3</a>.  <a href="#name-definition-cpace" class="xref">Definition CPace</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1" class="keepWithNext"><a href="#section-3.1" class="xref">3.1</a>.  <a href="#name-setup" class="xref">Setup</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="xref">3.2</a>.  <a href="#name-inputs" class="xref">Inputs</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="xref">3.3</a>.  <a href="#name-notation" class="xref">Notation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="xref">3.4</a>.  <a href="#name-protocol-flow" class="xref">Protocol Flow</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.5">
+                <p id="section-toc.1-1.3.2.5.1"><a href="#section-3.5" class="xref">3.5</a>.  <a href="#name-cpace" class="xref">CPace</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="xref">4</a>.  <a href="#name-ciphersuites" class="xref">Ciphersuites</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="xref">5</a>.  <a href="#name-use-of-the-hash-function-in" class="xref">Use of the hash function in CPace</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="xref">6</a>.  <a href="#name-cpace-on-single-coordinate-" class="xref">CPace on single-coordinate Ladders on Montgomery curves</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="xref">7</a>.  <a href="#name-cpace-on-prime-order-group-" class="xref">CPace on prime-order group abstractions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="xref">8</a>.  <a href="#name-security-considerations" class="xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="xref">9</a>.  <a href="#name-iana-considerations" class="xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="xref">10</a>. <a href="#name-acknowledgements" class="xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="xref">11</a>. <a href="#name-references" class="xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#section-11.1" class="xref">11.1</a>.  <a href="#name-normative-references" class="xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#section-11.2" class="xref">11.2</a>.  <a href="#name-informative-references" class="xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-A" class="xref"></a><a href="#name-authors-addresses" class="xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">This document describes CPace which is a protocol for two
+parties that share a low-entropy secret (password) to derive a to derive a strong shared key without
+disclosing the secret to offline dictionary attacks.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">The CPace method was tailored for constrained devices and
+specifically considers efficiency and hardware side-channel attack mitigations at the protocol level.
+CPace is designed to be compatible with any group of both prime- and non-prime order and explicitly
+handles the complexity of cofactor clearing on the protcol level. CPace
+comes with game-based and simulation based proofs where the latter provides composability guarantees.
+As a protocol, CPace is designed
+to be compatible with so-called "x-coordinate-only" Diffie-Hellman implementations on elliptic curve
+groups.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">CPace is designed to be suitable as both, a building block within a larger protocol construction using CPace as substep,
+and as a standalone protocol.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">It is considered, that for composed larger protocol constructions, the CPace subprotocol might be best executed in a
+separate cryptographic hardware, such as secure element chipsets. The CPace protocol design aims at considering
+the resulting constraints.<a href="#section-1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="requirements-notation">
+<section id="section-2">
+      <h2 id="name-requirements-notation">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-requirements-notation" class="section-name selfRef">Requirements Notation</a>
+      </h2>
+<p id="section-2-1">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED",
+"MAY", and "OPTIONAL" in this document are to be interpreted as
+described in BCP 14 <span>[<a href="#RFC2119" class="xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="xref">RFC8174</a>]</span> when, and only when, they
+appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="definition-cpace">
+<section id="section-3">
+      <h2 id="name-definition-cpace">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-definition-cpace" class="section-name selfRef">Definition CPace</a>
+      </h2>
+<div id="setup">
+<section id="section-3.1">
+        <h3 id="name-setup">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-setup" class="section-name selfRef">Setup</a>
+        </h3>
+<p id="section-3.1-1">For CPace both communication partners need to agree on a common cipher suite which consists of choosing a common
+hash function H and an elliptic curve group G.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">With H we denote a hash primitive with a hash function H.hash(m,l)
+that operates on an input octet string m and returns a hash result containing the first l result octets
+calculated by the primitive.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1-3">A given hash function H is characterized by its input and its preferred output sizes.
+We use an object-style notation H.constant_name.
+With H.b_in_bytes we denote the preferred output size in bytes of the primitive such
+that the hash function returns the full length of the hash if the second length parameter is not
+given: H.hash(m) = H.hash(m, H.b_in_bytes).<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1-4">With H.bmax_in_bytes we denote the maximum output size in octets supported by the hash primitive.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+<p id="section-3.1-5">A first common choice for H is SHA512 <span>[<a href="#RFC6234" class="xref">RFC6234</a>]</span> where b_in_bytes = bmax_in_bytes = 64
+as a fixed-length output of 64 bytes is produced.
+Another suitable choice for H is SHAKE256 <span>[<a href="#FIPS202" class="xref">FIPS202</a>]</span> which is also designed for a preferred length
+and security parameter of b_in_bytes = 64 but which allows for variable-length outputs without
+a fixed limit bmax_in_bytes.<a href="#section-3.1-5" class="pilcrow">¶</a></p>
+<p id="section-3.1-6">With H.s_in_bytes we denote the input block size used by H.
+For SHA512, e.g. the input block size s_in_bytes is 128, while for SHAKE256 the
+input block size amounts to 136 bytes.<a href="#section-3.1-6" class="pilcrow">¶</a></p>
+<p id="section-3.1-7">For a given group G this document specifies how to define the following set of group-specific
+functions and constants for the protocol execution. For making the implicit dependence of the respective
+functions and constants on the group G transparent, we use a object-style notation
+G.function_name() and G.constant_name.<a href="#section-3.1-7" class="pilcrow">¶</a></p>
+<p id="section-3.1-8">With G.I we denote a unique octet string representation of the neutral element of group G.<a href="#section-3.1-8" class="pilcrow">¶</a></p>
+<p id="section-3.1-9">g = G.calculate_generator(H, PRS,CI,sid). With calculate_generator we denote a function that outputs a
+octet string representation of a group element in G which is derived from input octet strings PRS, CI, sid using
+a hash function primitive.<a href="#section-3.1-9" class="pilcrow">¶</a></p>
+<p id="section-3.1-10">y = G.sample_scalar(). This function returns an octet string representation of a scalar value appropriate as a
+private Diffie-Hellman key for group G.<a href="#section-3.1-10" class="pilcrow">¶</a></p>
+<p id="section-3.1-11">Y = G.scalar_mult(y,g). This function takes a generator g as first parameter and a scalar y as second
+parameter and returns an octet string representation of a group element Y.<a href="#section-3.1-11" class="pilcrow">¶</a></p>
+<p id="section-3.1-12">K = G.scalar_mult_vfy(y,X). This function returns an octet string representation of a group element K which is
+calculated from a scalar y and a group element X. Moreover scalar_mult_vfy implements validity verifications of the inputs
+and returns the neutral element G.I if the validity check fails.<a href="#section-3.1-12" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="inputs">
+<section id="section-3.2">
+        <h3 id="name-inputs">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-inputs" class="section-name selfRef">Inputs</a>
+        </h3>
+<p id="section-3.2-1">With PRS we denote a password-related octet string which is a MANDATORY input for all CPace instantiations.
+Typically PRS is derived from a low-entropy secret such as a user-supplied password (pw) or a personal
+identification number.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">With CI we denote an OPTIONAL octet string for the channel identifier. CI can be used for
+binding CPace to one specific communication channel, if a common octet string representation for CI is
+available for both protocol partners upon protocol start.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.2-3">With sid we denote an OPTIONAL octet string input containing a session id. In application scenarios
+where a higher-level protocol has established a unique sid this parameter can be used to bind the CPace protocol execution
+to one specific session.<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+<p id="section-3.2-4">With ADa and ADb we denote OPTIONAL octet strings of parties A and B that contain associated public data
+of the communication partners.
+ADa could for instance include party identifiers.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="notation">
+<section id="section-3.3">
+        <h3 id="name-notation">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-notation" class="section-name selfRef">Notation</a>
+        </h3>
+<p id="section-3.3-1">With str1 || str2 we denote concatenation of octet strings.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.3-2">With oCAT(str1,str2) we denote ordered concatenation of octet strings such that oCAT(str1,str2) = str1 || str2
+if str2 &gt; str1 and oCAT(str1,str2) = str2 || str1 otherwise.<a href="#section-3.3-2" class="pilcrow">¶</a></p>
+<p id="section-3.3-3">CONCAT(str1,str2) defines a concatenation function that depends on the application scenario.
+In applications where CPace is used without clear initiator and responder roles, i.e. where the ordering of
+messages is not enforced by the protocol flow ordered concatenation SHALL BE used,
+i.e. CONCAT(str1,str2) == oCAT(str1,str2).<a href="#section-3.3-3" class="pilcrow">¶</a></p>
+<p id="section-3.3-4">In settings with defined initiator and responder roles
+CONCAT(str1,str2) SHALL BE defined as unordered concatenation: CONCAT(str1,str2) == str1 || str2.<a href="#section-3.3-4" class="pilcrow">¶</a></p>
+<p id="section-3.3-5">With len(S) we denote the number of octets in a string S.<a href="#section-3.3-5" class="pilcrow">¶</a></p>
+<p id="section-3.3-6">Finally, we let nil represent an empty octet string, i.e., len(nil) = 0.<a href="#section-3.3-6" class="pilcrow">¶</a></p>
+<p id="section-3.3-7">With prepend_len(octet_string) we denote the octet sequence that is obtained from prepending
+the length of the octet string as an utf-8 string to the byte sequence itself. (This will prepend one
+single octet for sequences shorter than 128 bytes and more octets otherwise).<a href="#section-3.3-7" class="pilcrow">¶</a></p>
+<p id="section-3.3-8">With prefix_free_cat(a0,a1, ...) we denote a function that outputs the prefix-free encoding of
+all input octet strings as the concatenation of the individual strings with their respective
+length prepended: prepend_len(a0) || prepend_len(a1) || ... . Use of this function allows for a
+easy parsing of strings and guarantees a prefix-free encoding.<a href="#section-3.3-8" class="pilcrow">¶</a></p>
+<p id="section-3.3-9">With sample_random_bytes(n) we denote a function that returns n octets uniformly sampled between 0 and 255.
+With zero_bytes(n) we denote a function that returns n octets with value 0.<a href="#section-3.3-9" class="pilcrow">¶</a></p>
+<p id="section-3.3-10">With ISK we denote the intermediate session key output string provided by CPace. It is RECOMMENDED to convert the
+intermediate session key ISK ot a final session key by using a suitable KDF function prior to using the key in a
+higher-level protocol.<a href="#section-3.3-10" class="pilcrow">¶</a></p>
+<p id="section-3.3-11">With DSI we denote domain-separation identifier strings.<a href="#section-3.3-11" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="protocol-flow">
+<section id="section-3.4">
+        <h3 id="name-protocol-flow">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-protocol-flow" class="section-name selfRef">Protocol Flow</a>
+        </h3>
+<p id="section-3.4-1">CPace is a one round protocol to establish an intermediate shared secret ISK
+with implicit mutual authentication.
+In the setup phase both sides agree on a common hash function H and a group G.<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.4-2">Prior to invocation, A and B are provisioned with public (CI) and secret
+information (PRS) as prerequisite for running the protocol.
+During the first round, A sends a public share Ya
+to B, and B responds with its own public share Yb.
+Both A and B then derive a shared secret ISK. ISK is meant to be
+used for producing encryption and authentication keys by a KDF function
+outside of the scope of CPace.<a href="#section-3.4-2" class="pilcrow">¶</a></p>
+<p id="section-3.4-3">Optionally when starting the protocol, A and B dispose of a sid string.
+sid is typically pre-established by a higher-level protocol
+invoking CPace. If no such sid is available from a higher-level
+protocol, a suitable approach is to let A choose a fresh random sid
+string and send it to B together with the first message. This method is shown in the
+setup protocol section below.<a href="#section-3.4-3" class="pilcrow">¶</a></p>
+<p id="section-3.4-4">This sample trace is shown below.<a href="#section-3.4-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.4-5">
+<pre>
+        A                  B
+        | (setup protocol  |
+(sample sid)  |     and sid)     |
+        |-----------------&gt;|
+---------------------------------------
+        |                  |
+(compute Ya)  |      Ya, ADa     |
+        |-----------------&gt;|
+        |      Yb, ADb     | (compute Yb)
+        |&lt;-----------------|
+        |   (verify data)  |
+        |   (derive ISK)   |
+</pre><a href="#section-3.4-5" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="cpace">
+<section id="section-3.5">
+        <h3 id="name-cpace">
+<a href="#section-3.5" class="section-number selfRef">3.5. </a><a href="#name-cpace" class="section-name selfRef">CPace</a>
+        </h3>
+<p id="section-3.5-1">In the setup phase, both parties A,B agreed on the group G a hash H. If a higher-level protocol provided a session id sid, both parties SHALL use this value in the protocol execution. If there is a clear initiator (party A) and responder (party B) role assigned in the application setting, A SHOULD sample a fresh random value sid and transmit it together with its first message. If the application scenario does not enforce an ordering of the two messages and no sid value is available from a higher-level protocol, then the empty string shall be used for the session id.<a href="#section-3.5-1" class="pilcrow">¶</a></p>
+<p id="section-3.5-2">To begin, A calculates a generator g = G.calculate_generator(H, PRS,CI,sid).<a href="#section-3.5-2" class="pilcrow">¶</a></p>
+<p id="section-3.5-3">A samples ya = G.sample_scalar() randomly according to the requirements for group G.
+A then calculates Ya= G.scalar_mult (ya,g). A then transmits MSGa = prefix_free_cat(Ya, ADa) with
+Ya and the optional associated data ADa to B. Note that prefixing the transmitted components with their
+respective lengths allows for unambigous parsing of MSGa by the receiver and guarantees a
+prefix-free encoding.<a href="#section-3.5-3" class="pilcrow">¶</a></p>
+<p id="section-3.5-4">B picks yb = G.sample_scalar() randomly. B then calculates
+g = G.calculate_generator(H, PRS,CI,sid) and
+Yb = G.scalar_mult(yb,g). B then calculates K = G.scalar_mult_vfy(yb,Ya).
+B MUST abort if K is the encoding of the neutral element G.I.
+Otherwise B sends MSGb = prefix_free_cat(Yb, ADb) to A and proceeds as follows.<a href="#section-3.5-4" class="pilcrow">¶</a></p>
+<p id="section-3.5-5">B returns ISK = H.hash(prefix_free_cat(G.DSI || "ISK", sid, K, CONCAT(MSGa, MSGb))).<a href="#section-3.5-5" class="pilcrow">¶</a></p>
+<p id="section-3.5-6">Upon reception of Yb, A calculates K = scalar_mult_vfy(Yb,ya). A MUST abort if K is the neutral element I.
+If K is different from I, A returns ISK = H.hash(prefix_free_cat(G.DSI || "ISK", sid, K, CONCAT(MSGa, MSGb))).<a href="#section-3.5-6" class="pilcrow">¶</a></p>
+<p id="section-3.5-7">Upon completion of this protocol, the session key ISK returned by A and B will be identical by both
+parties if and only if the supplied input parameters sid, PRS and CI match on both sides and the
+transcripts match.<a href="#section-3.5-7" class="pilcrow">¶</a></p>
+<p id="section-3.5-8">In application scenarios which are guaranteed to enforce clear initiator and responder roles
+unordered concatenation SHOULD BE used for the CONCAT(MSGa,MSGb) function. In applications
+without enforced ordering of the transmission of MSGa and MSGb,
+CONCAT() MUST BE implemented by using the ordered concatenation function oCAT().<a href="#section-3.5-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="ciphersuites">
+<section id="section-4">
+      <h2 id="name-ciphersuites">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-ciphersuites" class="section-name selfRef">Ciphersuites</a>
+      </h2>
+<p id="section-4-1">This section documents CPACE ciphersuite configurations. A ciphersuite
+is REQUIRED to specify,
+- a group G with associated definitions for G.sample_scalar(), G.scalar_mult() and G. scalar_mult.vfy() and G.calculate_generator() functions and an associated domain separation string G.DSI.
+- a hash function H.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">Currently, test vectors are available for the cipher suites
+CPACE-X25519-SHA512,
+CPACE-X448-SHAKE256,
+CPACE-P256-SHA256,
+CPACE-RISTR255-SHA512,
+CPACE-DECAF448-SHAKE256.<a href="#section-4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="use-of-the-hash-function-in-cpace">
+<section id="section-5">
+      <h2 id="name-use-of-the-hash-function-in">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-use-of-the-hash-function-in" class="section-name selfRef">Use of the hash function in CPace</a>
+      </h2>
+<p id="section-5-1">With generator_string(PRS,DSI,CI,sid, H.s_in_bytes) we denote a function that returns a string
+prefix_free_cat(PRS,zero_bytes(len_zpad), DSI, CI, sid) in which all input strings are concatenated
+such that the encoding of PRS together with a suitable zero pad field completely fills the first input block
+of the hash.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">The length len_zpad of the zero padding is calculated as len_zpad = MAX(0, H.s_in_bytes - len(prepend_length(PRS)) - 1).<a href="#section-5-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="cpace-on-single-coordinate-ladders-on-montgomery-curves">
+<section id="section-6">
+      <h2 id="name-cpace-on-single-coordinate-">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-cpace-on-single-coordinate-" class="section-name selfRef">CPace on single-coordinate Ladders on Montgomery curves</a>
+      </h2>
+<p id="section-6-1">In this section we consider the case of CPace using the X25519 and X448 Diffie-Hellman functions
+from <span>[<a href="#RFC7748" class="xref">RFC7748</a>]</span> operating on the Montgomery curves Curve25519 and Curve448 <span>[<a href="#RFC7748" class="xref">RFC7748</a>]</span>.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">CPace implementations using single-coordinate ladders on further Montgomery curves SHALL use the definitions in line
+with the specifications for X25519 and X448 and review the guidance given in the security consideration section and
+<span>[<a href="#CPacePaper" class="xref">CPacePaper</a>]</span>.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<p id="section-6-3">For X25519 the following definitions apply:
+- G.sample_scalar() = sample_random_bytes(32)
+- G.scalar_mult(y,g) = G.scalar_mult_vfy(y,g) = X25519(y,g)
+- G.I = zero_bytes(32)
+- G.DSI = "CPace255"
+- G.field_size_bytes = 32
+- G.field_size_bits = 255<a href="#section-6-3" class="pilcrow">¶</a></p>
+<p id="section-6-4">For X448 the following definitions apply:
+- G.sample_scalar() = sample_random_bytes(56)
+- G.scalar_mult(y,g) = G.scalar_mult_vfy(y,g) = X448(y,g)
+- G.I = zero_bytes(56)
+- G.DSI = "CPace448"
+- G.field_size_bytes = 56
+- G.field_size_bits = 448<a href="#section-6-4" class="pilcrow">¶</a></p>
+<p id="section-6-5">The G.calculate_generator(H, PRS,sid,CI) function shall be implemented as follows.
+- First gen_str = generator_string(PRS,G.DSI,CI,sid, H.s_in_bytes) is calculated using the input block size of the
+  chosen hash primitive.
+- This string is then hashed to the required length
+  gen_str_hash = H.hash(gen_str, G.field_size_bytes).
+  Note that this implies that the permissible output length H.maxb_in_bytes MUST BE larger or equal to the
+  field size of the group G for making a hashing primitive suitable.
+- This result is then considered as a field coordinate using
+  the u = decodeUCoordinate(gen_str_hash, G.field_size_bits) function from <span>[<a href="#RFC7748" class="xref">RFC7748</a>]</span> which we
+  repeat in the appendix for convenience.
+- The result point g is then calculated as (g,v) = map_to_curve_elligator2(u) using the function
+  from <span>[<a href="#I-D.irtf-cfrg-hash-to-curve" class="xref">I-D.irtf-cfrg-hash-to-curve</a>]</span>. Note that the v coordinate produced by the map_to_curve_elligator2 function
+  is not required for CPace and discarded.<a href="#section-6-5" class="pilcrow">¶</a></p>
+<p id="section-6-6">In the appendix we show sage code that can be used as reference implementation for the calculate_generator and
+key generation functions.<a href="#section-6-6" class="pilcrow">¶</a></p>
+<p id="section-6-7">The definitions above aim at making the protocol suitable for outsourcing CPace to
+secure elements (SE) where nested hash function constructions such as defined in <span>[<a href="#RFC5869" class="xref">RFC5869</a>]</span>
+have to be considered to be particularly costly. Moreover as all hash operations are executed using strings
+with a prefix-free encoding also Merkle-Damgard constructions such as the SHA2 family can be considered as
+a representation of a random oracle, given that the permutation function is considered as a random oracle.<a href="#section-6-7" class="pilcrow">¶</a></p>
+<p id="section-6-8">Finally, with the introduction of a zero-padding after the PRS string, the CPace design aims at mitigating
+attacks of a side-channel adversary that analyzes correlations between publicly known information with
+the low-entropy PRS string.<a href="#section-6-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="cpace-on-prime-order-group-abstractions">
+<section id="section-7">
+      <h2 id="name-cpace-on-prime-order-group-">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-cpace-on-prime-order-group-" class="section-name selfRef">CPace on prime-order group abstractions</a>
+      </h2>
+<p id="section-7-1">In this section we consider the case of CPace using the ristretto25519 and decafX448 group abstractions.
+These abstractions define an encode and decode function, group exponentiation
+and a one-way-map.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2">For ristretto255 the following definitions apply:
+- G.DSI = "CPaceRistretto"
+- G.field_size_bytes = 32
+- G.group_size_bits = 252<a href="#section-7-2" class="pilcrow">¶</a></p>
+<p id="section-7-3">For decaf448 the following definitions apply:
+- G.DSI = "CPaceDecaf"
+- G.field_size_bytes = 56
+- G.group_size_bits = 488<a href="#section-7-3" class="pilcrow">¶</a></p>
+<p id="section-7-4">For both abstractions the following definitions apply:
+- G.sample_scalar() = sample_random_bytes(G.group_size_bits) (Todo: add masking the upper bits!).
+- G.scalar_mult(y,g) = encode(g^y)
+- G.I = encode(g^0), where g is an arbitrary generator
+- G.scalar_mult_vfy(y,X) is implemented as follows. If the decode(X) function fails, it returns G.I. Otherwise it returns encode( decode(X)^y )<a href="#section-7-4" class="pilcrow">¶</a></p>
+<p id="section-7-5">Note that with these definitions the scalar_mult function operates on a decoded point g and returns an encoded point,
+while the scalar_mult_vfy(y,X) function operates on a scalar and an encoded point X.<a href="#section-7-5" class="pilcrow">¶</a></p>
+<p id="section-7-6">The G.calculate_generator(H, PRS,sid,CI) function shall return a decoded point and be implemented as follows.
+- First gen_str = generator_string(PRS,G.DSI,CI,sid, H.s_in_bytes) is calculated using the input block size of the
+  chosen hash primitive.
+- This string is then hashed to the required length
+  gen_str_hash = H.hash(gen_str, 2 * G.field_size_bytes).
+  Note that this implies that the permissible output length H.maxb_in_bytes MUST BE larger or equal to twice the
+  field size of the group G for making a hashing primitive suitable.
+  Finally the generator g is calculated as g = one_way_map(gen_str_hash) using the one-way map function
+  from the abstraction.<a href="#section-7-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-considerations">
+<section id="section-8">
+      <h2 id="name-security-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-8-1">A security proof of CPace is found in <span>[<a href="#CPacePaper" class="xref">CPacePaper</a>]</span>.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">In order to prevent length-extension attacks, all hash inputs MUST be prefix-free strings in order to
+make CPace suitable when Merkle-Damgard hashing constructions such as SHA2 or SHA512
+are considered <span>[<a href="#CDMP05" class="xref">CDMP05</a>]</span>. Otherwise so-called length-extension attacks of the hash
+would have to be considered. This is guaranteed by the design of the prefix_free_cat() function.<a href="#section-8-2" class="pilcrow">¶</a></p>
+<p id="section-8-3">Although already K is a shared value, still it MUST NOT be used as a shared secret key.
+Note that calculation of ISK from K includes the protocol transcript and
+prevents key malleability with respect to man-in-the-middle attacks from active adversaries.<a href="#section-8-3" class="pilcrow">¶</a></p>
+<p id="section-8-4">The definitions given for the case of Curve25519 and Curve448 rely on the following properties of the
+elliptic curves <span>[<a href="#CPacePaper" class="xref">CPacePaper</a>]</span>:
+- The curve has order (p * c) with p prime and c a small cofactor. Also the curve's quadratic twist must be of
+          order (p' * c') with p' prime and c' a cofactor.
+- The cofactor c' of the twist MUST BE EQUAL to or an integer multiple of the cofactor c of the curve.
+- The representation of the neutral element G.I MUST BE the same for both, the curve and its twist.
+- Both field order q and group order p are close to a power of two such that randomly sampled binary strings
+          can be used as representation for field elements and scalars <span>[<a href="#CPacePaper" class="xref">CPacePaper</a>]</span> .<a href="#section-8-4" class="pilcrow">¶</a></p>
+<p id="section-8-5">Elements received from a peer MUST be checked by a proper implementation of the scalar_mult_vfy methods.
+Failure to properly validate group elements can lead to attacks. The Curve25519-based cipher suite employs
+the twist security feature of the curve for point validation.
+As such, it is mandatory to check that any actual X25519 function implementation maps
+all low-order points on both the curve and the twist on the neutral element.
+Corresponding test vectors are provided in the appendix.<a href="#section-8-5" class="pilcrow">¶</a></p>
+<p id="section-8-6">The randomly generated values ya and yb MUST NOT be reused.<a href="#section-8-6" class="pilcrow">¶</a></p>
+<p id="section-8-7">CPace is not originally meant to be used in conjunction with servers supporting several users and, thus
+several different username/password pairs.
+In this setting it is RECOMMENDED to consider the augmented PAKE protocol OPAQUE or
+to use CPace as building block of the augmented AuCPace protocol <span>[<a href="#AUCPacePaper" class="xref">AUCPacePaper</a>]</span>.<a href="#section-8-7" class="pilcrow">¶</a></p>
+<p id="section-8-8">If CPace is used as a building block of higher-level protocols, it is RECOMMENDED that sid
+is generated by the higher-level protocol and passed to CPace. One suitable option is that sid
+is generated by concatenating ephemeral random strings from both parties.<a href="#section-8-8" class="pilcrow">¶</a></p>
+<p id="section-8-9">Since CPace is designed to be used as a building block in higher-level protocols and for
+compatibility with constrained hardware,
+it does not by itself include a strong key derivation function construction.
+Instead CPace uses a simple hash operation on a prefix-free string input for generating its
+intermediate key ISK.
+It is RECOMMENDED that the ISK is post-processed by a KDF such as <span>[<a href="#RFC5869" class="xref">RFC5869</a>]</span>
+according the needs of the higher-level protocol. In case
+that the CPace protocol is delegated to a secure element hardware, it is RECOMMENDED that the calculation of
+the KDF function is implemented in the main processing unit.<a href="#section-8-9" class="pilcrow">¶</a></p>
+<p id="section-8-10">In case that side-channel attacks are to be considered practical for a given application, it is RECOMMENDED to focus
+side-channel protections such as masking and redundant execution (faults) on the process of calculating
+the secret generator G.calculate_generator(PRS,CI,sid).
+The most critical aspect to consider is the processing of the first block of the hash that includes
+the PRS string. The CPace protocol construction considers the fact that side-channel protections of hash functions might
+be particularly resource hungry. For this reason, CPace aims at minimizing the number
+of hash functions invocations in the
+specified calculate_generator function.<a href="#section-8-10" class="pilcrow">¶</a></p>
+<p id="section-8-11">CPace is proven secure under the hardness of the computational Simultaneous Diffie-Hellmann (SDH)
+assumption in the group G (as defined in <span>[<a href="#CPacePaper" class="xref">CPacePaper</a>]</span>).
+Still, even for the event that large-scale quantum computers (LSQC) will become available, CPace forces an active
+adversary to solve one CDH per password guess <span>[<a href="#CPacePaper2" class="xref">CPacePaper2</a>]</span>.
+In this sense, using the wording suggested by Steve Thomas on the CFRG mailing list,
+CPace is "quantum-annoying".<a href="#section-8-11" class="pilcrow">¶</a></p>
+<p id="section-8-12">While the zero-padding introduced when hashing the sensitive PRS string can be expected to make
+the task for a side-channel
+adversary more complex, this feature allone is not sufficient for preventing power analysis attacks.<a href="#section-8-12" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-9">
+      <h2 id="name-iana-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-9-1">No IANA action is required.<a href="#section-9-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="acknowledgements">
+<section id="section-10">
+      <h2 id="name-acknowledgements">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="section-10-1">Thanks to the members of the CFRG for comments and advice. Any comment and advice is appreciated.<a href="#section-10-1" class="pilcrow">¶</a></p>
+<p id="section-10-2">Comments are specifically invited regarding the inclusion or exclusion of both,
+initiator/responder and symmetric settings. Currently we plan to consider both application
+settings in this draft.<a href="#section-10-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-11">
+      <h2 id="name-references">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-11.1">
+        <h3 id="name-normative-references">
+<a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8174">https://www.rfc-editor.org/rfc/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-11.2">
+        <h3 id="name-informative-references">
+<a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="AUCPacePaper">[AUCPacePaper]</dt>
+        <dd>
+<span class="refAuthor">Haase, B.</span> and <span class="refAuthor">B. Labrique</span>, <span class="refTitle">"AuCPace. PAKE protocol tailored for the use in the internet of things"</span>, <time datetime="2018-02" class="refDate">February 2018</time>, <span>&lt;<a href="https://eprint.iacr.org/2018/286">https://eprint.iacr.org/2018/286</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="CDMP05">[CDMP05]</dt>
+        <dd>
+<span class="refAuthor">Coron, J-S.</span>, <span class="refAuthor">Dodis, Y.</span>, <span class="refAuthor">Malinaud, C.</span>, and <span class="refAuthor">P. Puniya</span>, <span class="refTitle">"Merkle-Damgaard Revisited: How to Construct a Hash Function"</span>, <span class="seriesInfo">In Advances in Cryptology - CRYPTO 2005</span>, <span class="seriesInfo">pages 430-448</span>, <span class="seriesInfo">DOI 10.1007/11535218_26</span>, <time datetime="2005" class="refDate">2005</time>, <span>&lt;<a href="https://doi.org/10.1007/11535218_26">https://doi.org/10.1007/11535218_26</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="CPacePaper">[CPacePaper]</dt>
+        <dd>
+<span class="refAuthor">Abdalla, M.</span>, <span class="refAuthor">Haase, B.</span>, and <span class="refAuthor">J. Hesse</span>, <span class="refTitle">"Security analysis of CPace"</span>, <span>n.d.</span>, <span>&lt;<a href="https://eprint.iacr.org/2021/114">https://eprint.iacr.org/2021/114</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="CPacePaper2">[CPacePaper2]</dt>
+        <dd>
+<span class="refAuthor">Eaton, E.</span> and <span class="refAuthor">D. Stebila</span>, <span class="refTitle">"The 'quantum annoying' property of password-authenticated key exchange protocols."</span>, <span>n.d.</span>, <span>&lt;<a href="https://eprint.iacr.org/2021/696">https://eprint.iacr.org/2021/696</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="FIPS202">[FIPS202]</dt>
+        <dd>
+<span class="refAuthor">National Institute of Standards and Technology (NIST)</span>, <span class="refTitle">"SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions"</span>, <time datetime="2015-08" class="refDate">August 2015</time>, <span>&lt;<a href="https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf">https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.irtf-cfrg-hash-to-curve">[I-D.irtf-cfrg-hash-to-curve]</dt>
+        <dd>
+<span class="refAuthor">Faz-Hernandez, A.</span>, <span class="refAuthor">Scott, S.</span>, <span class="refAuthor">Sullivan, N.</span>, <span class="refAuthor">Wahby, R. S.</span>, and <span class="refAuthor">C. A. Wood</span>, <span class="refTitle">"Hashing to Elliptic Curves"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-irtf-cfrg-hash-to-curve-12</span>, <time datetime="2021-09-16" class="refDate">16 September 2021</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-12">https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-12</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="NonceDisrespecting">[NonceDisrespecting]</dt>
+        <dd>
+<span class="refAuthor">Bock, H.</span>, <span class="refAuthor">Zauner, A.</span>, <span class="refAuthor">Devlin, S.</span>, <span class="refAuthor">Somorovsky, J.</span>, and <span class="refAuthor">P. Jovanovic</span>, <span class="refTitle">"Nonce-Disrespecting Adversaries -- Practical Forgery Attacks on GCM in TLS"</span>, <time datetime="2016-05-17" class="refDate">17 May 2016</time>, <span>&lt;<a href="https://eprint.iacr.org/2016/475.pdf">https://eprint.iacr.org/2016/475.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5869">[RFC5869]</dt>
+        <dd>
+<span class="refAuthor">Krawczyk, H.</span> and <span class="refAuthor">P. Eronen</span>, <span class="refTitle">"HMAC-based Extract-and-Expand Key Derivation Function (HKDF)"</span>, <span class="seriesInfo">RFC 5869</span>, <span class="seriesInfo">DOI 10.17487/RFC5869</span>, <time datetime="2010-05" class="refDate">May 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc5869">https://www.rfc-editor.org/rfc/rfc5869</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6234">[RFC6234]</dt>
+        <dd>
+<span class="refAuthor">Eastlake 3rd, D.</span> and <span class="refAuthor">T. Hansen</span>, <span class="refTitle">"US Secure Hash Algorithms (SHA and SHA-based HMAC and HKDF)"</span>, <span class="seriesInfo">RFC 6234</span>, <span class="seriesInfo">DOI 10.17487/RFC6234</span>, <time datetime="2011-05" class="refDate">May 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc6234">https://www.rfc-editor.org/rfc/rfc6234</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7748">[RFC7748]</dt>
+      <dd>
+<span class="refAuthor">Langley, A.</span>, <span class="refAuthor">Hamburg, M.</span>, and <span class="refAuthor">S. Turner</span>, <span class="refTitle">"Elliptic Curves for Security"</span>, <span class="seriesInfo">RFC 7748</span>, <span class="seriesInfo">DOI 10.17487/RFC7748</span>, <time datetime="2016-01" class="refDate">January 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7748">https://www.rfc-editor.org/rfc/rfc7748</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="authors-addresses">
+<section id="appendix-A">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Michel Abdalla</span></div>
+<div dir="auto" class="left"><span class="org">DI, École Normale Supérieure, Paris</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:michel.abdalla@ens.fr" class="email">michel.abdalla@ens.fr</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Bjoern Haase</span></div>
+<div dir="auto" class="left"><span class="org">Endress + Hauser Liquid Analysis</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:bjoern.m.haase@web.de" class="email">bjoern.m.haase@web.de</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Julia Hesse</span></div>
+<div dir="auto" class="left"><span class="org">IBM, Zürich Research Laboratory</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:JHS@zurich.ibm.com" class="email">JHS@zurich.ibm.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
